@@ -700,6 +700,8 @@ We start by installing the packages required.  The only additions are the packag
 $ npm install @nest/jwt passport-jwt
 ```
 
+The `@nest/jwt` package (see more [here](https://github.com/nestjs/jwt)) is a utility package that helps with JWT manipulation.  The `passport-jwt` is the Passport package that implements JWT authentication.
+
 #### Define API module and routes
 
 Now let's define a Module with a Controller to handle our API routes.  We'll call this our `ApiModule`, and we'll prefix all of its route paths with `/api`.
@@ -759,7 +761,7 @@ $ # POST to /api/login
 $ curl -X POST http://localhost:3000/api/login
 $ # result -> {"access_token":"sampletoken"}
 $ # GET /api/me
-$ curl http://localhost:300/api/me
+$ curl http://localhost:3000/api/me
 $ # result -> {"userId":1,"username":"john","pet":{"name":"alfred","picId":1}}
 ```
 
@@ -811,6 +813,7 @@ We've followed the same recipe described earlier for all Passport strategies.  I
 The `validate()` method is almost identical to the one used by our `LocalStrategy` in our first use case. In the current case, we are checking for validity by calling a `validateToken` method (which we'll implement momentarily). With this strategy, Passport invokes our supplied `validate()` function with a single `token` parameter, containing the **decoded JWT** extracted from the API call.  As earlier, we delegate the bulk of the validation work to our `authService`, this time in a new `validateToken()` method.  Let's implement that method now.  Open the `auth.service.ts` file in the `auth` folder, and update it to look like the following:
 
 ```typescript
+// src/auth/auth.service.ts
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 
