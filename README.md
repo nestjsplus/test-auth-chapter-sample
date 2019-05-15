@@ -307,7 +307,7 @@ import { UsersService } from '../users/users.service';
 export class AuthService {
   constructor(private readonly usersService: UsersService) {}
 
-  async validateUser(username, password): Promise<any> {
+  async validateUser(username, pass): Promise<any> {
     const user = await this.usersService.findOne(username);
     if (user && user.password === pass) {
       const { password, ...result } = user;
@@ -480,7 +480,8 @@ import { SessionSerializer } from './session.serializer';
 export class AuthModule {}
 ```
 
-Now let's create our `AuthenticatedGuard`.  This is a traditional Guard, as covered in the <a href="https://docs.nestjs.com/guards">Guards</a> chapter. Its role is simply to protect certain routes.
+Now let's create our `AuthenticatedGuard`.  This is a traditional Guard, as covered in the <a href="https://docs.nestjs.com/guards">Guards</a> chapter. Its role is simply to protect certain routes. Create the file `authenticated.guard.ts` in the `guards` folder, and add the following code:
+
 ```typescript
 // src/common/guards/authenticated.guard.ts
 import { ExecutionContext, Injectable, CanActivate } from '@nestjs/common';
@@ -697,7 +698,7 @@ Specific to our API Server, we need to meet the following requirements:
 We start by installing the packages required.  The only additions are the packages required to support a JWT authentication method:
 
 ```bash
-$ npm install @nest/jwt passport-jwt
+$ npm install @nestjs/jwt passport-jwt
 ```
 
 The `@nest/jwt` package (see more [here](https://github.com/nestjs/jwt)) is a utility package that helps with JWT manipulation.  The `passport-jwt` is the Passport package that implements JWT authentication.
@@ -887,6 +888,7 @@ Let's take a closer look at how we handle a  `GET /api/login` request.  We're us
 With this in mind, we can now build a simple method to generate a JWT, and return it in this route, and we're done!  We'll generate the JWT in our `authService`.  Open the `auth.service.ts` file in the `auth` folder, and add the `login()` method, and import the `JwtService` as shown:
 
 ```typescript
+// sr/auth/auth.service.ts
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
