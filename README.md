@@ -182,7 +182,7 @@ bootstrap();
 The final step in this section is setting up our routes.  Modify `app.controller.ts` so that it looks like this:
 ```typescript
 // src/app.controller.ts
-import { Controller, Get, Post, Request } from '@nestjs/common';
+import { Controller, Get, Post, Request, Res } from '@nestjs/common';
 import { Response } from 'express';
 
 @Controller()
