@@ -1,6 +1,5 @@
 // src/api/api.controller.ts
 import { Controller, Get, Request, Res, Post, UseGuards } from '@nestjs/common';
-import { Response } from 'express';
 import { LoginGuard } from '../common/guards/login.guard';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from '../auth/auth.service';
@@ -11,14 +10,13 @@ export class ApiController {
 
   @UseGuards(LoginGuard)
   @Post('/login')
-  async login(@Request() req, @Res() res: Response) {
-    const token = await this.authService.login(req.user);
-    res.json(token);
+  async login(@Request() req) {
+    return this.authService.login(req.user);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get('/me')
-  getProfile(@Request() req, @Res() res: Response) {
-    res.json(req.user);
+  getProfile(@Request() req) {
+    return req.user;
   }
 }
