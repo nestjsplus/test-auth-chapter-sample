@@ -28,4 +28,11 @@ export class UsersService {
   async findOne(username): Promise<any> {
     return this.users.filter(user => user.username === username)[0];
   }
+
+  async findOneById(userId): Promise<any> {
+    const { password, ...result } = this.users.filter(
+      user => user.userId === userId,
+    )[0];
+    return result;
+  }
 }
