@@ -32,10 +32,11 @@ export class UsersService {
     return this.users.filter(user => user.username === username)[0];
   }
 
-  async findOneById(userId): Promise<any> {
-    const { password, ...result } = this.users.filter(
-      user => user.userId === userId,
-    )[0];
-    return result;
+  async findOneById(id): Promise<any> {
+    const found = this.users.filter(user => user.userId === id)[0];
+    if (found) {
+      const { password, ...result } = found;
+      return result;
+    }
   }
 }
