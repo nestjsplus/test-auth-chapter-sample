@@ -1,6 +1,5 @@
 // src/api/api.controller.ts
-import { Controller, Get, Request, Res, Post, UseGuards } from '@nestjs/common';
-import { LoginGuard } from '../common/guards/login.guard';
+import { Controller, Get, Request, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from '../auth/auth.service';
 import { UsersService } from '../users/users.service';
@@ -12,7 +11,7 @@ export class ApiController {
     private readonly usersService: UsersService,
   ) {}
 
-  @UseGuards(LoginGuard)
+  @UseGuards(AuthGuard('local'))
   @Post('/login')
   async login(@Request() req) {
     return this.authService.login(req.user);
