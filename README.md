@@ -6,7 +6,9 @@ Authentication is an **essential** part of most applications. There are a lot of
 
 In this chapter, we'll consider two representative use cases, and implement a complete end-to-end authentication solution for each:
 * Traditional web application with server-side template-driven HTML pages
-* API Server that accepts REST/HTTP requests and returns JSON responses
+* API server that accepts REST/HTTP requests and returns JSON responses
+
+Note that in this chapter, we build the API Server use case on top of the Web application use case.  This is not required of course, but is useful for illustrating the core concepts of authentication.  At the end of the API Server section, we describe how to strip out the unnecessary components for an API server-only implementation.  Because of this, we recommend reading the entire chapter in the order presented, even if you're only interested in the API server use case.
 
 #### Server-side web application use case
 
@@ -211,13 +213,13 @@ export class AppController {
 
 At this point, you should be able to run the app:
 ```bash
-$ npm run start:dev
+$ npm run start
 ```
-Now, browse to <a href="http://localhost:3000/">http://locahost:3000</a> and click through the basic UI.
+Now, browse to <a href="http://localhost:3000/">http://localhost:3000</a> and click through the basic UI.  At this point, of course, you can click through the pages without logging in.
 
 #### Implementing Passport strategies
 
-We're now ready to implement the authorization feature. Let's start with an overview of the process used for **any** Passport strategy.  It's helpful to think of Passport as a mini framework in itself. The elegance of the framework is that it abstracts the authentication process into a few basic steps that you customize based on the strategy you're implementing.  It's like a framework because you configure it by supplying custom code in the form of callback functions, which Passport calls at the appropriate time.  The nest-passport module wraps this framework in a Nest style package. We'll use that below, but first let's consider vanilla Passport.
+We're now ready to implement the authentication feature. Let's start with an overview of the process used for **any** Passport strategy.  It's helpful to think of Passport as a mini framework in itself. The elegance of the framework is that it abstracts the authentication process into a few basic steps that you customize based on the strategy you're implementing.  It's like a framework because you configure it by supplying custom code in the form of callback functions, which Passport calls at the appropriate time.  The nest-passport module wraps this framework in a Nest style package. We'll use that below, but first let's consider vanilla Passport.
 
 In vanilla Passport, you configure a strategy by providing two things:
 1. A set of options that are specific to that strategy.  For example, in a JWT strategy, you might provide a secret to sign tokens.
@@ -369,7 +371,7 @@ We've also implemented the `validate()` method. For the local-strategy, Passport
 
 Most of the work is done in our `AuthService` (and in turn, in our `UserService`), so this method is quite straightforward. The `validate()` method for **any** Passport strategy will follow a similar pattern.  If a user is found and valid, it's returned so request handling can continue, and Passport can do some further housekeeping.  If it's not found, we throw an exception and let our <a href="exceptions">exceptions layer</a> handle it.
 
-It turns out that the only really significant difference for each strategy is **how** you determine if a user exists and is "valid".  For example, in a JWT strategy, we'll verify that a token is valid (and possibly, depending on requirements, whether the `userId` carried in the decoded token matches a record in our user database, or other custom requirements).  Hence, this pattern of sub-classing and implementing strategy-specific validation is consistent, elegant and extensible.
+It turns out that the only really significant difference for each strategy is **how** you determine if a user exists and is "valid".  For example, in a JWT strategy, depending on requirements, we may evaluate whether the `userId` carried in the decoded token matches a record in our user database, or matches a list of revoked tokens.  Hence, this pattern of sub-classing and implementing strategy-specific validation is consistent, elegant and extensible.
 
 With the strategy in place, we have a few more tasks to complete:
 1. Create Guards we can use to decorate routes so that the configured Passport strategy is invoked
@@ -402,7 +404,7 @@ The <a href="guards">Guards</a> chapter describes the primary function of Guards
 
 In the first case (user is not logged in), we need to perform two distinct functions.  First, we want to restrict the routes the unauthenticated user can access (i.e., deny access to restricted routes).  We'll use Guards in their familiar capacity to handle this function.  We'll do this through a standard, user-defined `AuthenticatedGuard` which we'll build shortly.
 
-Next, we also need to handle the **authentication step** itself (i.e., when a previously unauthenticated user attempts to login).  Looking at our UI, it's easy to see that we'll handle this step via a `POST` request on our `/login` route. This raises the question: how exactly do we invoke the "login phase" of the Passport local strategy in that route?
+Next, we also need to handle the **authentication step** itself (i.e., when a previously unauthenticated user attempts to login) to kick things off: setting up our session, and transitioning from the unauthenticated state to the authenticated state.  Looking at our UI, it's easy to see that we'll handle this step via a `POST` request on our `/login` route. This raises the question: how exactly do we invoke the "login phase" of the Passport local strategy in that route?
 
 The answer is: by using another Guard.  Similar to the way we extended the `PassportStrategy` class in the last section, we'll start with a default `AuthGuard` provided in the `@nestjs/passport` package, and extend it as needed, naming our new Guard `LoginGuard`.  We'll then decorate our `POST /login` route with this `LoginGuard` to invoke our Passport local strategy.
 
@@ -431,7 +433,7 @@ There's a lot going on in these few lines of code, so let's walk through it.
 * As with all Guards, the primary method we define/override is `canActivate()`, which is what we do here.
 * The body of `canActivate()` is setting up an Express session.  Here's what's happening:
     * we call `canActivate()` on the super class, as we normally would in extending a super class method. Our super class provides the framework for invoking our Passport local strategy.  Recall from the [Guards](https://docs.nestjs.com/guards) chapter that `canActivate()` returns a boolean indicating whether or not the target route will be called.  When we get here, Passport will have run the previously configured strategy (from the super class) and will return a boolean to indicate whether or not the user has successfully authenticated.  Here, we stash the result so we can do a little more processing before finally returning.
-    * the key step for starting a session is to now invoke the `logIn()` method on our super-class, passing in the current request.  This actually calls a special method that Passport automatically added to our Express `Request` object during the previous step.  See [here](http://www.passportjs.org/docs/configure/) and [here](http://www.passportjs.org/docs/login/) for more on Passport sessions and these special methods.
+    * the key step for starting a session is to now invoke the `logIn()` method on our super class, passing in the current request.  This actually calls a special method that Passport automatically added to our Express `Request` object during the previous step.  See [here](http://www.passportjs.org/docs/configure/) and [here](http://www.passportjs.org/docs/login/) for more on Passport sessions and these special methods.
     * the Express session has now been setup, and we can return our `canActivate()` result, allowing only authenticated users to continue.
 
 #### Sessions
@@ -696,7 +698,7 @@ We start by installing the packages required.  The only additions are the packag
 $ npm install @nestjs/jwt passport-jwt
 ```
 
-The `@nest/jwt` package (see more [here](https://github.com/nestjs/jwt)) is a utility package that helps with JWT manipulation.  The `passport-jwt` is the Passport package that implements JWT authentication.
+The `@nest/jwt` package (see more [here](https://github.com/nestjs/jwt)) is a utility package that helps with JWT manipulation.  The `passport-jwt` package is the Passport package that implements JWT authentication.
 
 #### Define API module and routes
 
@@ -734,7 +736,7 @@ export class ApiController {
 
 We're going to stub both routes for now while we get our JWT infrastructure in place.
 
-We stub the profile route (`GET /me`) because we don't know the identity of the user we should be returning.  Why not just pass in the Id to the route?  We have a better solution.  Once we get our JWT handling in place, we'll be pulling the userId from the JWT itself.  This provides a more secure solution, as we can trust the JWT has not been tampered with.
+We stub the profile route (`GET /me`) because we don't know the identity of the user we should be returning.  Why not just pass in the `userId` to the route?  We have a better solution.  Once we get our JWT handling in place, we'll be pulling `userId` from the JWT itself.  This provides a more secure solution, as we can trust the JWT has not been tampered with.
 
 Update the `ApiModule` to import the `AuthModule`:
 ```typescript
@@ -806,21 +808,21 @@ We've followed the same recipe described earlier for all Passport strategies.  I
 * ignoreExpiration: just to be explicit, we choose the default `false` setting, which delegates the responsibility of ensuring that a JWT has not expired to the Passport module.  This means that if our route is supplied with an expired JWT, the request will be denied and a `401 Unauthorized` response sent.  Passport conveniently handles this automatically for us.
 * secretOrKey: we are using the expedient option of supplying a symmetric secret for signing the token. Other options, such as a PEM-encoded public key, may be more appropriate for production apps (see [here](https://github.com/mikenicholson/passport-jwt#extracting-the-jwt-from-the-request) for more information).  In any case, as cautioned earlier, **do not expose this secret publicly**.  Instead, use an appropriate secrets vault, environment variable, or configuration service in your production app.
 
-The `validate()` method deserves some discussion. Recall that this method is called by Passport during request authorization. At this point in the process, Passport has verified the JWT's signature and decoded the token.  Passport then invokes our `validate()` method passing that decoded JWT as its single parameter.  Based on the way JWT signing works, we can assume that we're receiving a token that we have previously signed and issued to a valid user.  While we haven't written that code just yet, we can safely make the assumption that this token represents a user we have already validated against our user database.
+The `validate()` method deserves some discussion. Recall that this method is called by Passport during request authorization. At that point in the process, Passport has verified the JWT's signature and decoded the token.  Passport then invokes our `validate()` method passing that decoded JWT as its single parameter.  Based on the way JWT signing works, we can assume that we're receiving a token that we have previously signed and issued to a valid user.  While we haven't written that code just yet, we can safely make the assumption that this token represents a user we have already validated against our user database.
 
-As a result of all this, our response to the `validate()` callback is trivial: we simply return an object containing the userId (note we choose a property name of `sub` to hold our userId to be consistent with JWT standards). Recall again that the purpose of this returned object, within the Passport framework, is so that Passport can build a `user` object and attach it as a property on the `Request` object.
+As a result of all this, our response to the `validate()` callback is trivial: we simply return an object containing the `userId` (note we choose a property name of `sub` to hold our `userId` value to be consistent with JWT standards). Recall again that the purpose of this returned object, within the Passport framework, is so that Passport can build a `user` object and attach it as a property on the `Request` object.
 
-It's also worth pointing out that this framework leaves us room ('hooks' as it were) to inject other business logic into the process.  For example, we **could** do a database lookup in our `validate()` method to extract more information about the user, resulting in a more enriched `user` object being available in our `Request`.  This is also the place we may decide to do further token validation, such as looking up the userId in a list of revoked tokens, enabling us to perform token revocation. The model we've implemented here in our sample code is a fast, "stateless JWT" model, where each API call is immediately authorized based on the presence of a valid JWT, and a small bit of information about the requester is available in our Request pipeline.
+It's also worth pointing out that this framework leaves us room ('hooks' as it were) to inject other business logic into the process.  For example, we **could** do a database lookup in our `validate()` method to extract more information about the user, resulting in a more enriched `user` object being available in our `Request`.  This is also the place we may decide to do further token validation, such as looking up the `userId` in a list of revoked tokens, enabling us to perform token revocation. The model we've implemented here in our sample code is a fast, "stateless JWT" model, where each API call is immediately authorized based on the presence of a valid JWT, and a small bit of information about the requester (its `userId`) is available in our Request pipeline.
 
 #### Implement JWT strategy guards
 
-As with the earlier local-strategy, we're now ready to implement Guards to:
-1. Trigger authentication upon user login (this time, via a REST request)
+We're now at the stage where we can implement Guards to:
+1. Trigger authentication upon user login (this time, via a RESTful API request)
 2. Enforce security on protected REST API endpoints
 
-Let's deal with the login Guard first. We're going to piggyback on the local-storage strategy to allow clients to login with a username and password.  In our first use case (server-side web app), we took steps to ensure that a session was established. To accomplish that, we extended the built-in `AuthGuard` class and overrode the `canActivate()` method (see [Implement guards]()). In this use case, we don't need sessions, so we can use the out-of-the-box `AuthGuard` provided by the passport-local strategy.
+Let's deal with the login Guard first. We're going to piggyback on the local-storage strategy to allow clients to login with a username and password.  In our first use case (server-side web app), we took steps to ensure that a session was established. To accomplish that, we extended the built-in `AuthGuard` class and overrode the `canActivate()` method (see [Implement guards](#implement-guards)). In this use case, we don't need sessions, so we can use the out-of-the-box `AuthGuard` provided by the passport-local strategy.
 
-Let's update the `POST /api/login` route handler to do so.  Open the `api.controller.ts` file in the `api` folder, and update the `@Post('/login')` route as shown below, as well as the several new imports. While we're here, we're also adding a Guard to the `@Get('/me')` route.  We'll discuss that next.
+Let's update the `POST /api/login` route handler to do so.  Open the `api.controller.ts` file in the `api` folder, and update the `@Post('/login')` route as shown below, as well as the several new imports. While we're here, we're also adding a Guard to the `@Get('/me')` route, and making a change to the `getProfile()` method body.  We'll discuss that next.
 
 ```typescript
 // src/api/api.controller.ts
@@ -848,7 +850,7 @@ export class ApiController {
 }
 ```
 
-Let's take a closer look at how a  `GET /api/login` request.  We're using the built-in `AuthGuard` provided by the passport-local strategy. This means that:
+Let's take a closer look at how a  `GET /api/login` request is handled.  We're using the built-in `AuthGuard` provided by the passport-local strategy. This means that:
 1. The route handler will only be invoked if the user has successfully authenticated
 2. The `req` parameter will contain a `user` property (populated by Passport during authentication)
 
@@ -887,9 +889,10 @@ export class AuthService {
 
 We're using the `@nestjs/jwt` library, which supplies a `sign()` function to generate our JWT, which we'll return as a simple object with a single `access_token` property.  Don't forget to inject the JwtService provider into the `AuthService`.
 
-We now need to update the `AuthModule` to import the new dependencies and configure the `JwtModule`.  Open up `auth.service.ts` in the `auth` folder and update it to look like this:
+We now need to update the `AuthModule` to import the new dependencies and configure the `JwtModule`.  Open up `auth.module.ts` in the `auth` folder and update it to look like this:
 
 ```typescript
+// src/auth/auth.module.ts
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalStrategy } from './local.strategy';
@@ -928,10 +931,96 @@ $ curl -X POST http://localhost:3000/api/login -d '{"username": "john", "passwor
 $ # result -> {"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2Vybm... }
 $ # GET /api/me using access_token returned from previous step as bearer code
 $ curl http://localhost:3000/api/me -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2Vybm..."
-$ # result ->{"username":"john","pet":{"name":"alfred","picId":1}}
+$ # result -> {"userId":1}
 ```
 
 Note that in the `AuthModule`, we configured the JWT to have an expiration of `60 seconds`.  This is probably too short an expiration, and dealing with the details of token expiration and refresh is beyond the scope of this article.  However, we chose that to demonstrate an important quality of JWTs and the Passport JWT strategy.  If you wait 60 seconds after authenticating before attempting a `GET /api/me` request, you'll receive a `401 Unauthorized` response.  This is because Passport automatically checks the JWT for its expiration time, saving you the trouble of doing so in your application.
+
+Our `GET /api/me` method is simply returning `req.user`, which contains just our `userId` property, as expected.  We should really be returning a more complete `user` object.  Let's make that change. We'll need a new method on our `UsersService`.  Update it to look like this:
+
+```typescript
+// src/users/users.service.ts
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class UsersService {
+  private readonly users;
+
+  constructor() {
+    this.users = [
+      {
+        userId: 1,
+        username: 'john',
+        password: 'changeme',
+        pet: { name: 'alfred', picId: 1 },
+      },
+      {
+        userId: 2,
+        username: 'chris',
+        password: 'secret',
+        pet: { name: 'gopher', picId: 2 },
+      },
+      {
+        userId: 3,
+        username: 'maria',
+        password: 'guess',
+        pet: { name: 'jenny', picId: 3 },
+      },
+    ];
+  }
+
+  async findOne(username): Promise<any> {
+    return this.users.filter(user => user.username === username)[0];
+  }
+
+  async findOneById(id): Promise<any> {
+    const found = this.users.filter(user => user.userId === id)[0];
+    if (found) {
+      const { password, ...result } = found;
+      return result;
+    }
+  }
+}
+```
+In `findOneById()`, we make use of an ES6 spread operator to remove the password before returning the `user` object.
+
+Finally, we update our `ApiController` to use this new find method:
+
+```typescript
+// src/api/api.controller.ts
+import { Controller, Get, Request, Post, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { AuthService } from '../auth/auth.service';
+import { UsersService } from '../users/users.service';
+
+@Controller('api')
+export class ApiController {
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
+
+  @UseGuards(AuthGuard('local'))
+  @Post('/login')
+  async login(@Request() req) {
+    return this.authService.login(req.user);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('/me')
+  getProfile(@Request() req) {
+    return this.usersService.findOneById(req.user.userId);
+  }
+}
+```
+
+Now, when we run our `GET /api/me` request (don't forget to authenticate again, and pass in the newly minted access_token), we get these results:
+
+```bash
+$ # GET /api/me using access_token returned from previous step as bearer code
+$ curl http://localhost:3000/api/me -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2Vybm..."
+$ # result -> {"userId":1,"username":"john","pet":{"name":"alfred","picId":1}}
+```
 
 We've now completed our JWT authentication implementation.  JavaScript clients (such as Angular/React/Vue), and other JavaScript apps, can now authenticate and communicate securely with our API Server.
 
