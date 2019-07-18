@@ -7,8 +7,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
 } from '@nestjs/common';
-import { Response } from 'express';
-import { Request } from 'connect-flash';
+import { Request, Response } from 'express';
 
 @Catch(HttpException)
 export class AuthExceptionFilter implements ExceptionFilter {
