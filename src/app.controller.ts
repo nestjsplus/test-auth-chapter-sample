@@ -5,6 +5,7 @@ import {
   Post,
   Request,
   Res,
+  Render,
   UseGuards,
   UseFilters,
 } from '@nestjs/common';
@@ -16,31 +17,35 @@ import { AuthExceptionFilter } from './common/filters/auth-exceptions.filter';
 @Controller()
 @UseFilters(AuthExceptionFilter)
 export class AppController {
+
   @Get('/')
-  index(@Request() req, @Res() res: Response) {
-    res.render('login', { message: req.flash('loginError') });
+  @Render('login')
+  index(@Request() req, @Res() res: Response): {message: string} {
+    return { message: req.flash('loginError') };
   }
 
   @UseGuards(LoginGuard)
   @Post('/login')
-  login(@Request() req, @Res() res: Response) {
+  login(@Request() req, @Res() res: Response): void {
     res.redirect('/home');
   }
 
   @UseGuards(AuthenticatedGuard)
   @Get('/home')
-  getHome(@Request() req, @Res() res: Response) {
-    res.render('home', { user: req.user });
+  @Render('home')
+  getHome(@Request() req, @Res() res: Response): {user: any } {
+    return { user: req.user };
   }
 
   @UseGuards(AuthenticatedGuard)
   @Get('/profile')
-  getProfile(@Request() req, @Res() res: Response) {
-    res.render('profile', { user: req.user });
+  @Render('profile')
+  getProfile(@Request() req: any, @Res() res: Response): {user: any} {
+    return { user: req.user };
   }
 
   @Get('/logout')
-  logout(@Request() req, @Res() res: Response) {
+  logout(@Request() req, @Res() res: Response): void {
     req.logout();
     res.redirect('/');
   }
