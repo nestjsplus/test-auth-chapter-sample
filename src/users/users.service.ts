@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class UsersService {
-  private readonly users;
+  private readonly users: any[];
 
   constructor() {
     this.users = [
@@ -25,7 +25,7 @@ export class UsersService {
     ];
   }
 
-  async findOne(username): Promise<any> {
-    return this.users.filter(user => user.username === username)[0];
+  async findOne(username: string): Promise<any> {
+    return this.users.filter((user: any) => user.username === username)[0];
   }
 }
