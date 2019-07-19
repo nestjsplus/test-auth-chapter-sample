@@ -17,30 +17,29 @@ import { AuthExceptionFilter } from './common/filters/auth-exceptions.filter';
 @Controller()
 @UseFilters(AuthExceptionFilter)
 export class AppController {
-
   @Get('/')
   @Render('login')
-  index(@Request() req, @Res() res: Response): {message: string} {
+  index(@Request() req): { message: string } {
     return { message: req.flash('loginError') };
   }
 
   @UseGuards(LoginGuard)
   @Post('/login')
-  login(@Request() req, @Res() res: Response): void {
+  login(@Res() res: Response): void {
     res.redirect('/home');
   }
 
   @UseGuards(AuthenticatedGuard)
   @Get('/home')
   @Render('home')
-  getHome(@Request() req, @Res() res: Response): {user: any } {
+  getHome(@Request() req): { user: any } {
     return { user: req.user };
   }
 
   @UseGuards(AuthenticatedGuard)
   @Get('/profile')
   @Render('profile')
-  getProfile(@Request() req: any, @Res() res: Response): {user: any} {
+  getProfile(@Request() req): { user: any } {
     return { user: req.user };
   }
 
