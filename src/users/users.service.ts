@@ -1,31 +1,20 @@
 // src/users/users.service.ts
 import { Injectable } from '@nestjs/common';
+import { Pet, User } from './user.entity';
 
 @Injectable()
 export class UsersService {
-  private readonly users: any[];
+  private readonly users: User[];
 
   constructor() {
     this.users = [
-      {
-        username: 'john',
-        password: 'changeme',
-        pet: { name: 'alfred', picId: 1 },
-      },
-      {
-        username: 'chris',
-        password: 'secret',
-        pet: { name: 'gopher', picId: 2 },
-      },
-      {
-        username: 'maria',
-        password: 'guess',
-        pet: { name: 'jenny', picId: 3 },
-      },
+      new User('john', 'changeme', new Pet('alfred', 1)),
+      new User('chris', 'secret', new Pet('gopher', 2)),
+      new User('maria', 'guess', new Pet('jenny', 1)),
     ];
   }
 
-  async findOne(username: string): Promise<any> {
-    return this.users.filter((user: any) => user.username === username)[0];
+  async findOne(username: string): Promise<User> {
+    return this.users.find((user: User) => user.username === username);
   }
 }
