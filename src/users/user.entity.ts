@@ -1,10 +1,10 @@
 export class Pet {
 
-  constructor(name: string, picId: number){
+  constructor(name: string, picId: number) {
     this.name = name;
     this.picId = picId;
   }
-  
+
   name: string;
   picId: number;
 }

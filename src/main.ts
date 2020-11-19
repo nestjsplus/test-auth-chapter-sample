@@ -18,8 +18,8 @@ async function bootstrap() {
   app.set('view engine', '.hbs');
 
   const options = new DocumentBuilder()
-    .setTitle('Workplace Feed Server')
-    .setDescription('워크플레이스의 특정 피드를 전달 받는 서비스')
+    .setTitle('test-auth-chapter-sample')
+    .setDescription('Example for nestjs on passport(Local/SAML)')
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, options);

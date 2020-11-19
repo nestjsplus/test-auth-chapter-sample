@@ -15,6 +15,7 @@ import { AuthenticatedGuard } from './common/guards/authenticated.guard';
 import { AuthExceptionFilter } from './common/filters/auth-exceptions.filter';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
 import { LoginDTO } from './login.dto';
+import { SamlGuard } from './common/guards/saml.login.guard';
 
 @Controller()
 @UseFilters(AuthExceptionFilter)
@@ -35,6 +36,20 @@ export class AppController {
     res.redirect('/home');
   }
 
+  @ApiOperation({ summary: 'Login on SAML Strategy' })
+  @UseGuards(SamlGuard)
+  @Get('/login')
+  loginSaml(@Request() req, @Res() res: Response): Response<any> {
+    return res.send(req.user);
+  }
+
+  @ApiOperation({ summary: 'Login Callback on SAML Strategy' })
+  @UseGuards(SamlGuard)
+  @Post('/loginCallback')
+  loginCallbackSaml(@Request() req, @Res() res: Response): void {
+    res.redirect('/home');
+  }
+  
   @ApiOperation({ summary: 'Home Page' })
   @UseGuards(AuthenticatedGuard)
   @Get('/home')
