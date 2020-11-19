@@ -7,6 +7,7 @@ import * as session from 'express-session';
 import flash = require('connect-flash');
 import * as exphbs from 'express-handlebars';
 import * as passport from 'passport';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -15,6 +16,14 @@ async function bootstrap() {
   app.engine('.hbs', exphbs({ extname: '.hbs', defaultLayout: 'main' }));
   app.set('views', viewsPath);
   app.set('view engine', '.hbs');
+
+  const options = new DocumentBuilder()
+    .setTitle('test-auth-chapter-sample')
+    .setDescription('Example for nestjs on passport(Local/SAML)')
+    .setVersion('1.0')
+    .build();
+  const document = SwaggerModule.createDocument(app, options);
+  SwaggerModule.setup('docs', app, document);
 
   app.use(
     session({
