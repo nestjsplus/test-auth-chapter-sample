@@ -21,9 +21,9 @@ class User {
 export class SAMLStrategy extends PassportStrategy(Strategy) {
   public constructor(config: ConfigService) {
     super({
-      path: "/api/loginCallback",
+      path: "/loginCallback",
       entryPoint: config.get('SAML_ENTRY_POINT') ||
-        "https://login.gshs.co.kr/auth/realms/gsshop/protocol/saml/clients/urn:gsshop:hangbot:test",
+        "https://myservice/auth/realms/service/protocol/saml/clients/urn:service:auth:test",
       privateCert: fs.readFileSync(
         config.get('SAML_PEM_PATH') || "./client-private-key.pem",
         "utf-8"
